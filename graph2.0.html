@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stress Assessment | Aura-Mind</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root { --primary: #4ade80; --bg-dark: #050a18; --card-bg: rgba(255,255,255,0.06); }
+
+body {
+    background: var(--bg-dark);
+    color: white;
+    font-family: 'Segoe UI';
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    margin:0;
+}
+
+.assessment-card {
+    width:90%;
+    max-width:600px;
+    background: var(--card-bg);
+    padding:40px;
+    border-radius:20px;
+    text-align:center;
+}
+
+.q-text { font-size:1.3rem; margin-bottom:20px; }
+
+.options-grid { display:grid; gap:10px; }
+
+.opt-btn {
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    background:#222;
+    color:white;
+    cursor:pointer;
+}
+
+.opt-btn:hover {
+    background: var(--primary);
+    color:black;
+}
+
+.progress-bar {
+    width:100%;
+    height:8px;
+    background:#222;
+    border-radius:5px;
+    margin-bottom:15px;
+}
+
+.progress-fill {
+    height:100%;
+    background: var(--primary);
+    width:0%;
+}
+
+#result-screen { display:none; }
+
+#lineChart { margin-top:20px; }
+
+#pieChart {
+    margin-top:20px;
+    height:180px !important;
+    max-height:180px;
+}
+</style>
+</head>
+
+<body>
+<div class="assessment-card">
+
+<div id="quiz-screen">
+<div class="progress-bar"><div id="pBar" class="progress-fill"></div></div>
+<p id="qCounter">Question 1/7</p>
+<div class="q-text" id="qContent"></div>
+
+<div class="options-grid">
+<button class="opt-btn" onclick="handle(0)">Never</button>
+<button class="opt-btn" onclick="handle(1)">Rarely</button>
+<button class="opt-btn" onclick="handle(2)">Sometimes</button>
+<button class="opt-btn" onclick="handle(3)">Often</button>
+<button class="opt-btn" onclick="handle(4)">Always</button>
+</div>
+</div>
+
+<div id="result-screen">
+<h2 id="level"></h2>
+<p id="desc"></p>
+
+<canvas id="lineChart"></canvas>
+<canvas id="pieChart"></canvas>
+
+<button class="opt-btn" onclick="location.reload()">Restart</button>
+</div>
+
+</div>
+
+<script>
+
+// 🔥 QUESTIONS (fixed)
+const questions = [
+{q:"Do you feel mentally exhausted even after rest?", type:"mental"},
+{q:"Do you overthink situations frequently?", type:"mental"},
+{q:"Do you feel physical fatigue due to stress?", type:"physical"},
+{q:"Do you feel emotionally overwhelmed?", type:"emotional"},
+{q:"Do you feel productive and satisfied?", type:"positive"},
+{q:"Do you feel relaxed during free time?", type:"positive"},
+{q:"Do you feel pressure from expectations?", type:"emotional"}
+];
+
+let i=0, score=0;
+let answers=[];
+let category={mental:0, physical:0, emotional:0};
+
+// ✅ FIX: ensure DOM ready
+window.onload = function() {
+    loadQ();
+};
+
+function loadQ(){
+    document.getElementById("qContent").innerText = questions[i].q;
+    document.getElementById("qCounter").innerText = `Question ${i+1}/7`;
+    document.getElementById("pBar").style.width = ((i+1)/7*100)+"%";
+}
+
+function handle(val){
+    let q=questions[i];
+    let final=(q.type==="positive")?(4-val):val;
+
+    score+=final;
+    answers.push(final);
+
+    if(q.type!=="positive") category[q.type]+=final;
+
+    i++;
+    if(i<questions.length) loadQ();
+    else showResult();
+}
+
+function showResult(){
+    document.getElementById("quiz-screen").style.display="none";
+    document.getElementById("result-screen").style.display="block";
+
+    let lvl=document.getElementById("level");
+    let desc=document.getElementById("desc");
+
+    if(score<=9){
+        lvl.innerText="Low Stress";
+        lvl.style.color="#4ade80";
+        desc.innerText="Balanced state.";
+    }
+    else if(score<=18){
+        lvl.innerText="Moderate Stress";
+        lvl.style.color="#facc15";
+        desc.innerText="Manage stress carefully.";
+    }
+    else{
+        lvl.innerText="High Stress";
+        lvl.style.color="#f87171";
+        desc.innerText="High stress detected.";
+    }
+
+    setTimeout(()=>{
+        drawLine();
+        drawPie();
+    },200);
+}
+
+// 📈 LINE
+function drawLine(){
+    new Chart(document.getElementById("lineChart"),{
+        type:"line",
+        data:{
+            labels:["Q1","Q2","Q3","Q4","Q5","Q6","Q7"],
+            datasets:[{
+                label:"Stress Trend",
+                data:answers,
+                tension:0.4,
+                fill:true
+            }]
+        },
+        options:{
+            animation:{duration:2000},
+            plugins:{legend:{labels:{color:"white"}}},
+            scales:{
+                x:{ticks:{color:"white"}},
+                y:{beginAtZero:true,max:4,ticks:{color:"white"}}
+            }
+        }
+    });
+}
+
+// 🥧 PIE (small + fixed)
+function drawPie(){
+    new Chart(document.getElementById("pieChart"),{
+        type:"pie",
+        data:{
+            labels:["Mental","Physical","Emotional"],
+            datasets:[{
+                data:[category.mental,category.physical,category.emotional]
+            }]
+        },
+        options:{
+            maintainAspectRatio:false,
+            animation:{duration:2000},
+            plugins:{legend:{labels:{color:"white"}}}
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>
